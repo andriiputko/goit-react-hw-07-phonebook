@@ -1,35 +1,45 @@
-import { createSlice, combineReducers } from '@reduxjs/toolkit';
-import { nanoid } from 'nanoid';
+import { createSlice, isAnyOf } from '@reduxjs/toolkit';
+import { fetchContacts, addContact, deleteContact } from './operations';
 
-export const itemsSlice = createSlice({
-  name: 'items',
-  initialState: [],
-  reducers: {
-    addContact: {
-      reducer: (state, action) => {
-        state.push(action.payload);
-      },
-      prepare: ({ name, number }) => {
-        const id = nanoid();
-        return { payload: { name, number, id } };
-      },
-    },
-    deleteContact(state, action) {
-      return state.filter(item => item.id !== action.payload);
-    },
-  },
-});
 
-export const filterSlice = createSlice({
-  name: 'filter',
-  initialState: '',
-  reducers: {
-    changeFilter(_, action) {
-      return action.payload;
-    },
+const contactsSlice = createSlice({
+  name: 'contacts',
+  initialState: {
+    contacts: [],
+    isLoading: false,
+    error: null,
   },
-});
-export const contactsReducer = combineReducers({
-  items: itemsSlice.reducer,
-  filter: filterSlice.reducer,
-});
+    extraReducers: builder =>
+    builder
+      .addCase(fetchContacts.fulfilled, (state, { payload }) => {
+        state.contacts = [...payload];
+      })
+      .addCase(addContact.fulfilled, (state, { payload }) => {
+        state.contacts = [...state.contacts, payload];
+      })
+      .addCase(deleteContact.fulfilled, (state, { payload }) => {
+        state.contacts = state.contacts.filter(contact => contact.id !== payload.id);
+      })
+      .addMatcher(
+        isAnyOf(fetchContacts.fulfilled, addContact.fulfilled, deleteContact.fulfilled),
+        state => {
+          state.isLoading = false;
+          state.error = null;
+        }
+      )
+      .addMatcher(
+        isAnyOf(fetchContacts.pending, addContact.pending, deleteContact.pending),
+        state => {
+          state.isLoading = true;
+        }
+      )
+      .addMatcher(
+        isAnyOf(fetchContacts.rejected, addContact.rejected, deleteContact.rejected),
+        (state, { payload }) => {
+          state.isLoading = false;
+          state.error = payload;
+        }
+      ),
+    })
+
+export const contactsReducer = contactsSlice.reducer;
