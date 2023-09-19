@@ -7,7 +7,6 @@ import { Filter } from 'components/Filter/Filter';
 
 export function App() {
   const dispatch = useDispatch();
-
   useEffect(() => {
     dispatch(fetchContacts());
   }, [dispatch]);
